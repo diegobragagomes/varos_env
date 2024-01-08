@@ -22,7 +22,7 @@ Para a última etapa, criou-se um Dashboard como solicitado inicialmente utiliza
 
 ## Pontos de Melhoria
 
-Para uma implemntação mais robusta e voltado para a produção, seria interessante o uso de um banco de dados para o armazenamento em vez do uso de arquivos .csv, como o RDS ou na própria GCP. 
+Para uma implemntação mais robusta e voltado para a produção, seria interessante o uso de um banco de dados como o RDS ou na própria GCP. Além de também colocar os dados das notícias no banco de dados transacional ou em um NOSQL. 
 
 Além disso, há pontos de melhoria no arquivo CSS.
 
