@@ -4,8 +4,27 @@ import requests
 import yfinance as yf
 from dash import Dash, html, dcc, callback, Output, Input
 import plotly.graph_objects as go
+import psycopg2
+from sqlalchemy import create_engine, text as sql_text
 
 dict_acoes = {'acoes':['CEAB3', 'WEGE3', 'PETR4'], 'vars_procura' : ['C%26A', 'weg', 'petr4'], 'ticker_yf' : ['CEAB3.SA', 'WEGE3.SA', 'PETR4.SA']}
+
+def database_conn():
+    
+    db_params = {
+    'dbname': 'mini_projeto',
+    'user': 'user',
+    'password': '21GiT99CqAwiH5z0jjUOB7cGLXJUpZlv',
+    'host': 'dpg-cmdkg58l5elc73ci4en0-a.oregon-postgres.render.com',
+    'port': '5432'
+}
+    
+    db_url = f"postgresql+psycopg2://{db_params['user']}:{db_params['password']}@{db_params['host']}:{db_params['port']}/{db_params['dbname']}"
+
+    engine = create_engine(db_url)
+
+    return engine
+
 
 # ## Web Scrapping no Brazil Journal
 
@@ -32,6 +51,10 @@ def capturar_noticias(acoes: dict):
 
 df_noticias = capturar_noticias(dict_acoes)
 
+# Conexão com o Database no Render
+
+engine = database_conn()
+
 
 # ## Cotações no Yahoo Finance
 
@@ -41,13 +64,21 @@ def capturar_cotacoes(acoes:dict):
         last_max_ = ticker_.history(period = 'max')
         last_max_.reset_index(inplace = True)
         last_max_['ticker'] = acao_ticker
-        last_max_.to_csv(f'.\\historico\\yf_history_{ticker}.csv', index = False)
+        last_max_.to_sql(f'yf_history_{ticker}', engine.connect(),if_exists= 'replace', schema= 'cotacao')
+        #last_max_.to_csv(f'.\\historico\\yf_history_{ticker}.csv', index = False)
 
 capturar_cotacoes(dict_acoes)
 
-df_ceab = pd.read_csv(f'.\\historico\\yf_history_CEAB3.SA.csv')
-df_wege = pd.read_csv(f'.\\historico\\yf_history_WEGE3.SA.csv')
-df_petr4 = pd.read_csv(f'.\\historico\\yf_history_PETR4.SA.csv')
+query_ceab = 'SELECT * FROM cotacao."yf_history_CEAB3.SA"'
+query_wege = 'SELECT * FROM cotacao."yf_history_WEGE3.SA"'
+query_petr4 = 'SELECT * FROM cotacao."yf_history_PETR4.SA"'
+
+
+df_ceab = pd.read_sql_query(con=engine.connect(), sql=sql_text(query_ceab))
+df_wege = pd.read_sql_query(con=engine.connect(), sql=sql_text(query_wege))
+df_petr4 = pd.read_sql_query(con=engine.connect(), sql=sql_text(query_petr4))
+
+engine.dispose()
 
 
 df_ceab['Date'] = pd.to_datetime(df_ceab['Date'], utc = True).map(lambda x: x.tz_convert('America/Sao_Paulo'))
